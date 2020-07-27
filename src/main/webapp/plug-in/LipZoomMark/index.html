@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/r/bs-3.3.5/jq-2.1.4,dt-1.10.8/datatables.min.css"/>
+ <link rel="stylesheet" type="text/css" href="example/style.css">
+
+<script src="http://www.jq22.com/jquery/jquery-1.10.2.js"></script>
+<script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+
+</head>
+<body>
+	
+	<div class="panel">
+
+	<div class="colorSelect">
+				<span>Mark Color:</span>
+				<label for='blue' style="color:blue">Blue<input type="radio" id="blue" name="markColor" class="radioItem" markColor='blue' checked="checked" /></label>
+				<label for='red' style="color:#d31145">Red<input type="radio" id="red" name="markColor" class="radioItem" markColor='red'/></label>
+				<label for='yellow' style="color:green">Green<input type="radio" id="yellow" name="markColor" class="radioItem" markColor='green'/></label>
+				<p>鼠标滚轮放大缩小图片，左键按住可拖动，右键添加标记</p>
+			</div>
+		<div id="container" style="border:1px solid #aaa;">
+			<img src="example/assets/demo.jpg">
+			<button id="reset" class="lipButton">旋转</button>
+			<button id="rotate" class="lipButton">重置</button>
+		</div>
+		<div class="content">
+			
+			<table id='marksTable' class="table table-bordered table-striped dataTable">
+				<thead>
+					<tr>
+						<th>序号</th>
+						<th>位置</th>
+						<th>说明</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+				
+			</table>
+		</div>
+	</div>
+	
+<script type="text/javascript" src="src/lip-zoom-mark-jquery.js"></script>
+<script type="text/javascript">
+	var angle = 0;
+	$('#container').ZoomMark({
+		'markColor':'blue',
+		'afterMark':addRowToTabel
+	});
+	$(function(){
+		$('.radioItem').change(function(){
+			$('#container').ZoomMark('changeSettings',{
+				'markColor':$('.colorSelect').find('input:checked').attr('markColor')
+			});
+		});
+		
+		$("#reset").click(function(){
+			$('#container').ZoomMark('reset');
+		});
+		$("#rotate").click(function(){
+			angle = angle+90 >=360 ? 0:angle+90;
+			$('#container').ZoomMark('rotate',angle);
+		})
+	});
+
+	function addRowToTabel(marks){
+		$('#marksTable').find('tbody').append('<tr id="row_'+marks[marks.length-1].id+'"><td><span class="colorSpan"style="background-color:'+marks[marks.length-1].color+'">'+($('#marksTable').find('tbody').find('tr').length+1)+'</span></td><td >'+marks[marks.length-1].color+'</td><td><textarea name="a" style="width:200px;height:60px;"></textarea></td><td><img src="example/assets/delete.png" onclick="deleteMark('+marks[marks.length-1].id+')"></td></tr>');
+	}
+
+	function deleteMark(id){
+		$('#container').ZoomMark('deleteMark',id);
+
+		$('#row_'+id).remove();
+		updateTableId();
+	}
+
+	function updateTableId(){
+		$('#marksTable').find('tbody').find('.colorSpan').each(function(index,value){
+			$(this).html(index+1);
+		})
+	}
+
+
+</script>
+	
+</body>
+</html>

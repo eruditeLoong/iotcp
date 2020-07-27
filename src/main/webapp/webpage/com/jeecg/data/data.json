@@ -1,0 +1,47 @@
+{
+	"id": "354354534h5ju34hg54ku3g543jy5fj3",
+	"name": "温湿度设备",
+	"code": "0005",
+	"echartData": [
+		{
+			"field": "wendu",
+			"label": "温度",
+			"unit": "℃",
+			"dataRange":"-20,120",
+			"normalDataRange":"0,40",
+			"lineData": [
+				{
+					"name": "2019/05/18 14:25:45",
+					"value": "25.5"
+				},
+				{
+					"name": "2019/05/18 14:25:45",
+					"value": "26.5"
+				},
+				{
+					"name": "2019/05/18 14:25:45",
+					"value": "28.5"
+				}
+			],
+			"pieData": [
+				{
+					"name": "正常",
+					"value": "10"
+				},
+				{
+					"name": "超值",
+					"value": "2"
+				}
+				{
+					"name": "低值",
+					"value": "1"
+				}
+			]
+		},
+		{
+			"field": "shidu",
+			"label": "湿度",
+			"unit": "%"
+		}
+	]
+}

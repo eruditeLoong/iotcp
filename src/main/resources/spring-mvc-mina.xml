@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+         http://www.springframework.org/schema/mvc
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://cxf.apache.org/jaxws
+   		http://cxf.apache.org/schemas/jaxws.xsd">
+    <bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
+        <property name="customEditors">
+            <map>
+                <entry key="java.net.SocketAddress" value="org.apache.mina.integration.beans.InetSocketAddressEditor">
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <!-- 通用NOI通信 -->
+    <bean id="ioAcceptor1" class="org.apache.mina.transport.socket.nio.NioSocketAcceptor" init-method="bind"
+          destroy-method="unbind">
+        <!--端口号 -->
+        <property name="defaultLocalAddress" value=":8888"/>
+        <!--绑定自己实现的handler -->
+        <property name="handler" ref="serverHandler"/>
+        <!--声明过滤器的集合 -->
+        <property name="filterChainBuilder" ref="filterChainBuilder"/>
+        <property name="reuseAddress" value="true"/>
+    </bean>
+    <!--自己实现的handler -->
+    <bean id="serverHandler" class="com.jeecg.nio.mina.ServerHandler"/>
+
+    <!-- session config 通过工厂方法注入 -->
+    <bean id="sessionConfig" factory-bean="ioAcceptor2" factory-method="getSessionConfig">
+        <property name="writeTimeout" value="300"/>
+        <property name="bothIdleTime" value="1800"/>
+        <property name="minReadBufferSize" value="512"/>
+        <property name="maxReadBufferSize" value="102400"/>
+    </bean>
+    <!-- GPS定位 -->
+    <bean id="ioAcceptor2" class="org.apache.mina.transport.socket.nio.NioSocketAcceptor" init-method="bind"
+          destroy-method="unbind">
+        <!--端口号 -->
+        <property name="defaultLocalAddress" value=":8889"/>
+        <!--绑定自己实现的handler -->
+        <property name="handler" ref="pServerHandler"/>
+        <!--声明过滤器的集合 -->
+        <property name="filterChainBuilder" ref="pFilterChainBuilder"/>
+        <property name="reuseAddress" value="true"/>
+    </bean>
+    <!--自己实现的handler -->
+    <bean id="pServerHandler" class="com.jeecg.nio.mina.position.GPSServerHandler"/>
+
+    <!-- executorFilter多线程处理 -->
+    <bean id="executorFilter" class="org.apache.mina.filter.executor.ExecutorFilter"/>
+    <bean id="mdcInjectionFilter" class="org.apache.mina.filter.logging.MdcInjectionFilter">
+        <constructor-arg value="remoteAddress"/>
+    </bean>
+
+    <!--编解码 通用 -->
+    <bean id="codecFilter" class="org.apache.mina.filter.codec.ProtocolCodecFilter">
+        <constructor-arg>
+            <bean class="com.jeecg.nio.mina.MyCodesFactory"></bean>
+        </constructor-arg>
+    </bean>
+    <!--编解码 GPS定位 -->
+    <bean id="pCodecFilter" class="org.apache.mina.filter.codec.ProtocolCodecFilter">
+        <constructor-arg>
+            <bean class="com.jeecg.nio.mina.position.codesFactory"></bean>
+        </constructor-arg>
+    </bean>
+
+    <!-- 多线程处理过滤器，的操作开启多线程，一般放在编解码过滤器之后， IO 线程与业务处理线程分开 -->
+    <bean id="executors" class="org.apache.mina.filter.executor.ExecutorFilter">
+        <constructor-arg index="0">
+            <value>1000</value>
+        </constructor-arg>
+        <constructor-arg index="1">
+            <value>1800</value>
+        </constructor-arg>
+    </bean>
+
+    <!--日志 -->
+    <bean id="loggingFilter" class="org.apache.mina.filter.logging.LoggingFilter"/>
+
+    <!--心跳检测filter -->
+    <bean id="keepAliveFilter" class="org.apache.mina.filter.keepalive.KeepAliveFilter">
+        <!--构造函数的第一个参数传入自己实现的工厂 -->
+        <constructor-arg>
+            <bean class="com.jeecg.nio.mina.MyKeepAliveMessageFactory"></bean>
+        </constructor-arg>
+        <!--第二个参数需要的是IdleStatus对象，value值设置为读写空闲 -->
+        <constructor-arg type="org.apache.mina.core.session.IdleStatus" value="BOTH_IDLE">
+        </constructor-arg>
+        <!--心跳频率，不设置则默认60s -->
+        <property name="requestInterval" value="1800"/>
+        <!--心跳超时时间，不设置则默认30s -->
+        <property name="requestTimeout" value="60"/>
+        <!--不设置默认false -->
+        <property name="forwardEvent" value="true"/>
+    </bean>
+
+    <!-- 物联网通用过滤器 -->
+    <bean id="filterChainBuilder" class="org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder">
+        <property name="filters">
+            <map>
+                <!--mina自带的线程池filter -->
+                <entry key="mdcInjectionFilter" value-ref="mdcInjectionFilter"/>
+                <!--自己实现的编解码器filter -->
+                <entry key="codecFilter" value-ref="codecFilter"/>
+                <!--日志的filter -->
+                <entry key="loggingFilter" value-ref="loggingFilter"/>
+                <!--心跳filter -->
+                <entry key="keepAliveFilter" value-ref="keepAliveFilter"/>
+                <entry key="executor" value-ref="executorFilter"/>
+            </map>
+        </property>
+    </bean>
+
+    <!-- 人员定位的过滤器 -->
+    <bean id="pFilterChainBuilder" class="org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder">
+        <property name="filters">
+            <map>
+                <!--日志的filter -->
+                <!--                <entry key="loggingFilter" value-ref="loggingFilter"/>-->
+                <!--自己实现的编解码器filter -->
+                <entry key="codecFilter" value-ref="pCodecFilter"/>
+                <!--mina自带的线程池filter -->
+                <entry key="mdcInjectionFilter" value-ref="mdcInjectionFilter"/>
+                <entry key="executor" value-ref="executors"/>
+            </map>
+        </property>
+    </bean>
+</beans>

@@ -1,0 +1,25 @@
+.battery {
+	width: 23px;
+	height: 11px;
+	color: #18b549;
+	border: 3px solid #18b549;
+	border-radius: 3px;
+	font-size: 10px;
+	position: relative;
+	background-image: linear-gradient(to right, #3a82b9, #10c53d);
+	background-repeat: no-repeat;
+	background-size: 0% 80%;
+	background-position: top 1px left 1px;
+	animation: charge 5s steps(8) infinite;
+}
+
+.battery::after {
+	content: '';
+	position: absolute;
+	width: 3px;
+	height: 8px;
+	background-color: currentColor;
+	top: 2px;
+	right: -7px;
+	border-radius: 0 0.2em 0.2em 0;
+}
